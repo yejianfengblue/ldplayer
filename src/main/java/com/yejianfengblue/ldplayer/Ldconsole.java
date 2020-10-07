@@ -2,7 +2,6 @@ package com.yejianfengblue.ldplayer;
 
 import com.yejianfengblue.ldplayer.command.CommandExecutionResult;
 import com.yejianfengblue.ldplayer.command.CommandExecutor;
-import com.yejianfengblue.ldplayer.command.CommandFailureException;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,11 +42,11 @@ class Ldconsole {
             if (isRunningOutput.size() == 1) {
                 return isRunningOutput.get(0).equals("running");
             } else {
-                throw new CommandFailureException(String.format("Command '%s' output more than one line: \n%s",
+                throw new LdplayerFailureException(String.format("Command '%s' output more than one line: \n%s",
                         cmd, isRunningOutput));
             }
         } else {
-            throw new CommandFailureException(String.format("Fail to execute command '%s'", cmd));
+            throw new LdplayerFailureException(String.format("Fail to execute command '%s'", cmd));
         }
     }
 
@@ -70,7 +69,7 @@ class Ldconsole {
                             "1".equals(columns[4])))
                     .collect(Collectors.toList());
         } else {
-            throw new CommandFailureException(String.format("Fail to execute command '%s'", cmd));
+            throw new LdplayerFailureException(String.format("Fail to execute command '%s'", cmd));
         }
     }
 
@@ -102,7 +101,7 @@ class Ldconsole {
             String cmd = cmdBuilder.toString();
             CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
             if (commandExecutionResult.getExitValue() != 0) {
-                throw new CommandFailureException(String.format("Fail to execute command '%s'", cmd));
+                throw new LdplayerFailureException(String.format("Fail to execute command '%s'", cmd));
             }
         }
     }
@@ -120,7 +119,7 @@ class Ldconsole {
                 " --local " + "\"" + localPath + "\"";
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
         if (commandExecutionResult.getExitValue() != 0) {
-            throw new CommandFailureException(String.format("Fail to execute command '%s'", cmd));
+            throw new LdplayerFailureException(String.format("Fail to execute command '%s'", cmd));
         }
     }
 
@@ -130,7 +129,7 @@ class Ldconsole {
                 LDCONSOLE, index, namespace, key, value);
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
         if (commandExecutionResult.getExitValue() != 0) {
-            throw new CommandFailureException(String.format("Fail to execute command '%s'", cmd));
+            throw new LdplayerFailureException(String.format("Fail to execute command '%s'", cmd));
         }
     }
 
@@ -139,7 +138,7 @@ class Ldconsole {
         String cmd = LDCONSOLE + " --reboot --index " + index;
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
         if (commandExecutionResult.getExitValue() != 0) {
-            throw new CommandFailureException(String.format("Fail to execute command '%s'", cmd));
+            throw new LdplayerFailureException(String.format("Fail to execute command '%s'", cmd));
         }
     }
 
@@ -148,7 +147,7 @@ class Ldconsole {
         String cmd = LDCONSOLE + " --quit --index " + index;
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
         if (commandExecutionResult.getExitValue() != 0) {
-            throw new CommandFailureException(String.format("Fail to execute command '%s'", cmd));
+            throw new LdplayerFailureException(String.format("Fail to execute command '%s'", cmd));
         }
     }
 }

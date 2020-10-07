@@ -1,6 +1,5 @@
 package com.yejianfengblue.ldplayer;
 
-import com.yejianfengblue.ldplayer.command.CommandFailureException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -88,7 +87,7 @@ public class LdplayerService {
             return newLdplayer;
 
         } else {
-            throw new CommandFailureException("New ldplayer index not found");
+            throw new LdplayerFailureException("New ldplayer index not found");
         }
     }
 

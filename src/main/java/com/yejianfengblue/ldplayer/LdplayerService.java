@@ -5,10 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -21,74 +19,58 @@ public class LdplayerService {
 
     public Ldplayer create(LdplayerCreation ldplayerCreation) throws InterruptedException {
 
-        Set<Integer> oldLdplayerIndexes = ldconsole.list().stream()
-                .map(LdplayerState::getIndex)
-                .collect(Collectors.toSet());
+        int newLdplayerIndex = ldconsole.copy(ldplayerCreation.getName(), ldplayerCreation.getFromIndex());
 
-        ldconsole.copy(ldplayerCreation.getName(), ldplayerCreation.getFromIndex());
+        Ldplayer newLdplayer = new Ldplayer(newLdplayerIndex);
+        newLdplayer.setName(ldplayerCreation.getName());
 
-        Set<Integer> newLdplayerIndexes = ldconsole.list().stream()
-                .map(LdplayerState::getIndex)
-                .collect(Collectors.toCollection(HashSet::new));
+        // manufacturer and model
+        if (StringUtils.isNotBlank(ldplayerCreation.getManufacturer())
+                && StringUtils.isNotBlank(ldplayerCreation.getModel())) {
+            ldconsole.modify(newLdplayerIndex)
+                    .manufacturer(ldplayerCreation.getManufacturer())
+                    .model(ldplayerCreation.getModel())
+                    .build()
+                    .run();
+        }
 
-        newLdplayerIndexes.removeAll(oldLdplayerIndexes);
-
-        if (newLdplayerIndexes.size() == 1) {
-            int newLdplayerIndex = newLdplayerIndexes.iterator().next();
-            Ldplayer newLdplayer = new Ldplayer(newLdplayerIndex);
-            newLdplayer.setName(ldplayerCreation.getName());
-
-            // manufacturer and model
-            if (StringUtils.isNotBlank(ldplayerCreation.getManufacturer())
-                    && StringUtils.isNotBlank(ldplayerCreation.getModel())) {
-                ldconsole.modify(newLdplayerIndex)
-                        .manufacturer(ldplayerCreation.getManufacturer())
-                        .model(ldplayerCreation.getModel())
-                        .build()
-                        .run();
+        // apk
+        if (ldplayerCreation.getInstallApkPaths() != null) {
+            for (String apk : ldplayerCreation.getInstallApkPaths()) {
+                installApk(newLdplayerIndex, apk);
             }
+        }
 
-            // apk
-            if (ldplayerCreation.getInstallApkPaths() != null) {
-                for (String apk : ldplayerCreation.getInstallApkPaths()) {
-                    installApk(newLdplayerIndex, apk);
-                }
+        // certificate
+        if (ldplayerCreation.getInstallCertPaths() != null) {
+            for (String cert : ldplayerCreation.getInstallCertPaths()) {
+                installCert(newLdplayerIndex, cert);
             }
+        }
 
-            // certificate
-            if (ldplayerCreation.getInstallCertPaths() != null) {
-                for (String cert : ldplayerCreation.getInstallCertPaths()) {
-                    installCert(newLdplayerIndex, cert);
-                }
+        // http proxy, need restart, so put last
+        if (StringUtils.isNotBlank(ldplayerCreation.getHttpProxyHost())
+                && null != ldplayerCreation.getHttpProxyPort()) {
+            setHttpProxy(newLdplayerIndex,
+                    ldplayerCreation.getHttpProxyHost(), ldplayerCreation.getHttpProxyPort(),
+                    ldplayerCreation.getHttpProxyExclusionList());
+        }
+
+        // reboot or quit
+        if (ldplayerCreation.isRunAfterCreate()) {
+
+            ldconsole.reboot(newLdplayerIndex);
+            while (!isAndroidReady(newLdplayerIndex)) {
+                TimeUnit.SECONDS.sleep(10);
             }
-
-            // http proxy, need restart, so put last
-            if (StringUtils.isNotBlank(ldplayerCreation.getHttpProxyHost())
-                    && null != ldplayerCreation.getHttpProxyPort()) {
-                setHttpProxy(newLdplayerIndex,
-                        ldplayerCreation.getHttpProxyHost(), ldplayerCreation.getHttpProxyPort(),
-                        ldplayerCreation.getHttpProxyExclusionList());
-            }
-
-            // reboot or quit
-            if (ldplayerCreation.isRunAfterCreate()) {
-
-                ldconsole.reboot(newLdplayerIndex);
-                while (!isAndroidReady(newLdplayerIndex)) {
-                    TimeUnit.SECONDS.sleep(10);
-                }
-                newLdplayer.setRunning(true);
-                newLdplayer.setAndroidReady(true);
-
-            } else {
-                ldconsole.quit(newLdplayerIndex);
-            }
-
-            return newLdplayer;
+            newLdplayer.setRunning(true);
+            newLdplayer.setAndroidReady(true);
 
         } else {
-            throw new LdplayerFailureException("New ldplayer index not found");
+            ldconsole.quit(newLdplayerIndex);
         }
+
+        return newLdplayer;
     }
 
     public Optional<Ldplayer> get(int index) {
@@ -162,7 +144,7 @@ public class LdplayerService {
         } while (!isAndroidReady(index));
     }
 
-    public void quit(int index) throws  InterruptedException {
+    public void quit(int index) throws InterruptedException {
 
         ldconsole.quit(index);
         do {

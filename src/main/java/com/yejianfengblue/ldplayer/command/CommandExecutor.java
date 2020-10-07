@@ -16,7 +16,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class CommandExecutor {
 
     /**
-     * @return  a wrapper of exit value and output lines
+     * @return  a wrapper of exit value and output lines.
+     *          If no output, the output lines is a empty list.
      * @throws  CommandFailureException  if error during read output or process is interrupted
      */
     public static CommandExecutionResult execute(String cmd) throws CommandFailureException {
@@ -34,6 +35,8 @@ public class CommandExecutor {
             log.debug("outputLines: {}", outputLines);
             if (!outputLines.isEmpty()) {
                 log.info("Output:\n{}", String.join("\n", outputLines));
+            } else {
+                log.info("No output");
             }
 
             int exitValue = process.waitFor();

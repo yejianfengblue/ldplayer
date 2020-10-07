@@ -92,7 +92,7 @@ class Ldconsole {
 
         void run() {
 
-            StringBuilder cmdBuilder = new StringBuilder(LDCONSOLE + " --modify --index " + index);
+            StringBuilder cmdBuilder = new StringBuilder(LDCONSOLE + " modify --index " + index);
             if (StringUtils.isNotBlank(manufacturer))
                 cmdBuilder.append(" --manufacturer " + manufacturer);
             if (StringUtils.isNotBlank(model))
@@ -135,7 +135,7 @@ class Ldconsole {
 
     void reboot(int index) {
 
-        String cmd = LDCONSOLE + " --reboot --index " + index;
+        String cmd = LDCONSOLE + " reboot --index " + index;
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
         if (commandExecutionResult.getExitValue() != 0) {
             throw new LdplayerFailureException(String.format("Fail to execute command '%s'", cmd));
@@ -144,7 +144,7 @@ class Ldconsole {
 
     void quit(int index) {
 
-        String cmd = LDCONSOLE + " --quit --index " + index;
+        String cmd = LDCONSOLE + " quit --index " + index;
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
         if (commandExecutionResult.getExitValue() != 0) {
             throw new LdplayerFailureException(String.format("Fail to execute command '%s'", cmd));

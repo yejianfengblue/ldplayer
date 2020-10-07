@@ -19,10 +19,18 @@ class Ldconsole {
     private static final String LDCONSOLE = "ldconsole";
 
     void copy(String name, int fromIndex) {
-        CommandExecutor.execute(
+
+        CommandExecutionResult commandExecutionResult = CommandExecutor.execute(
                 LDCONSOLE + " copy" +
                         " --name " + name +
                         " --from " + fromIndex);
+        if (commandExecutionResult.getExitValue() == 0) {
+            List<String> outputLines = commandExecutionResult.getOutputLines();
+            if (!outputLines.isEmpty()) {
+                throw new LdplayerFailureException(
+                        String.format("Fail to copy from index %d. %s", fromIndex, String.join("\n", outputLines)));
+            }
+        }
     }
 
     void installApp(int index, String apkPath) {
@@ -51,7 +59,16 @@ class Ldconsole {
     }
 
     void launch(int index) {
-        CommandExecutor.execute(LDCONSOLE + " launch --index " + index);
+
+        CommandExecutionResult commandExecutionResult = CommandExecutor.execute(LDCONSOLE + " launch --index " + index);
+
+        if (commandExecutionResult.getExitValue() == 0) {
+            List<String> outputLines = commandExecutionResult.getOutputLines();
+            if (!outputLines.isEmpty()) {
+                throw new LdplayerFailureException(
+                        String.format("Fail to launch index %d. %s", index, String.join("\n", outputLines)));
+            }
+        }
     }
 
     List<LdplayerState> list() {

@@ -31,7 +31,10 @@ public class CommandExecutor {
             List<String> outputLines = new BufferedReader(new InputStreamReader(process.getInputStream(), UTF_8))
                     .lines()
                     .collect(Collectors.toList());
-            log.info("Output:\n{}", String.join("\n", outputLines));
+            log.debug("outputLines: {}", outputLines);
+            if (!outputLines.isEmpty()) {
+                log.info("Output:\n{}", String.join("\n", outputLines));
+            }
 
             int exitValue = process.waitFor();
             log.info("Exit value: {}", exitValue);

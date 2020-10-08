@@ -1,5 +1,6 @@
 package com.yejianfengblue.ldplayer;
 
+import lombok.SneakyThrows;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.LinkRelation;
 
@@ -24,12 +25,14 @@ public class LdplayerLinks {
 
     static final LinkRelation QUIT_REL = LinkRelation.of(QUIT);
 
+    @SneakyThrows
     static Link launchLink(Ldplayer ldplayer) {
 
         return linkTo(methodOn(LdplayerController.class).launch(ldplayer.getIndex()))
                 .withRel(LAUNCH_REL);
     }
 
+    @SneakyThrows
     static Link stopLink(Ldplayer ldplayer) {
 
         return linkTo(methodOn(LdplayerController.class).quit(ldplayer.getIndex()))

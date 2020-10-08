@@ -18,9 +18,12 @@ public class CommandExecutor {
     /**
      * @return  a wrapper of exit value and output lines.
      *          If no output, the output lines is a empty list.
-     * @throws  CommandFailureException  if error during read output or process is interrupted
+     *
+     * @throws InterruptedException  process is interrupted
+     * @throws CommandExecutionFailureException  if fail to read command output
      */
-    public static CommandExecutionResult execute(String cmd) throws CommandFailureException {
+    public static CommandExecutionResult execute(String cmd)
+            throws InterruptedException, CommandExecutionFailureException {
 
         log.info("Execute command '{}'", cmd);
 
@@ -44,14 +47,16 @@ public class CommandExecutor {
 
             return new CommandExecutionResult(process.exitValue(), outputLines);
 
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException ioException) {
 
             if (null != process) {
                 process.destroy();
             }
-            log.error("Fail to execute command '{}'", cmd, e);
-            throw new CommandFailureException(
-                    String.format("Fail to execute command '%s' with error '%s'", cmd, e.getMessage()));
+            log.error("Fail to read output of command '{}'", cmd, ioException);
+            throw new CommandExecutionFailureException(
+                    String.format("Fail to read output of command '%s'. %s", cmd, ioException.getMessage()));
+        } catch (InterruptedException interruptedException) {
+            throw new InterruptedException(String.format("Command '%s' interrupted", cmd));
         }
     }
 }

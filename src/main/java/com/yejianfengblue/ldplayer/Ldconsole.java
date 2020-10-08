@@ -1,5 +1,6 @@
 package com.yejianfengblue.ldplayer;
 
+import com.yejianfengblue.ldplayer.command.CommandExecutionFailureException;
 import com.yejianfengblue.ldplayer.command.CommandExecutionResult;
 import com.yejianfengblue.ldplayer.command.CommandExecutor;
 import lombok.Builder;
@@ -19,9 +20,32 @@ class Ldconsole {
     private static final String LDCONSOLE = "ldconsole";
 
     /**
-     * @return  newly created index
+     * Because ldconsole erases the exit value of adb command, it's unsafe to detect failure based on exit value.
+     *
+     * @return output lines
+     *
+     * @throws InterruptedException  command execution process is interrupted
+     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
      */
-    int copy(String name, int fromIndex) {
+    List<String> adb(int index, String command) throws InterruptedException, CommandExecutionFailureException {
+
+        String cmd = LDCONSOLE + " adb" +
+                " --index " + index +
+                " --command \"" + command + "\"";
+        CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
+        return commandExecutionResult.getOutputLines();
+    }
+
+    /**
+     * @return newly created index
+     *
+     * @throws InterruptedException  command execution process is interrupted
+     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
+     *                                   output.
+     */
+    int copy(String name, int fromIndex)
+            throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
         // copy command exit value is the new index
         // copy command doesn't have output if succeeds
@@ -41,14 +65,35 @@ class Ldconsole {
         }
     }
 
-    void installApp(int index, String apkPath) {
-        CommandExecutor.execute(
-                LDCONSOLE + " installapp" +
-                        " --index " + index +
-                        " --filename " + "\"" + apkPath + "\"");
+    /**
+     * @throws InterruptedException  command execution process is interrupted
+     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
+     *                                   output.
+     */
+    void installApp(int index, String apkPath)
+            throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
+
+        String cmd = LDCONSOLE + " installapp" +
+                " --index " + index +
+                " --filename " + "\"" + apkPath + "\"";
+        CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
+        if (commandExecutionResult.getExitValue() != 0 || !commandExecutionResult.getOutputLines().isEmpty()) {
+            String errMsg = String.format("Fail to install %s to index %d. %s", apkPath, index,
+                    String.join("\n", commandExecutionResult.getOutputLines()));
+            log.error(errMsg);
+            throw new LdplayerFailureException(errMsg);
+        }
     }
 
-    boolean isRunning(int index) {
+    /**
+     * @throws InterruptedException  command execution process is interrupted
+     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
+     *                                   output.
+     */
+    boolean isRunning(int index)
+            throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
         String cmd = LDCONSOLE + " isrunning --index " + index;
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
@@ -71,7 +116,14 @@ class Ldconsole {
         }
     }
 
-    void launch(int index) {
+    /**
+     * @throws InterruptedException  command execution process is interrupted
+     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
+     *                                   output.
+     */
+    void launch(int index)
+            throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(LDCONSOLE + " launch --index " + index);
 
@@ -85,7 +137,14 @@ class Ldconsole {
         }
     }
 
-    List<LdplayerState> list() {
+    /**
+     * @throws InterruptedException  command execution process is interrupted
+     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
+     *                                   output.
+     */
+    List<LdplayerState> list()
+            throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
         String cmd = LDCONSOLE + " list2";
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
@@ -123,7 +182,13 @@ class Ldconsole {
             return internalBuilder().index(index);
         }
 
-        void run() {
+        /**
+         * @throws InterruptedException  command execution process is interrupted
+         * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
+         * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
+         *                                   output.
+         */
+        void run() throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
             StringBuilder cmdBuilder = new StringBuilder(LDCONSOLE + " modify --index " + index);
             if (StringUtils.isNotBlank(manufacturer))
@@ -133,9 +198,9 @@ class Ldconsole {
 
             String cmd = cmdBuilder.toString();
             CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
-            if (commandExecutionResult.getExitValue() != 0) {
+            if (commandExecutionResult.getExitValue() != 0 || !commandExecutionResult.getOutputLines().isEmpty()) {
                 String errMsg = String.format("Fail to modify index %d. %s",
-                        index, commandExecutionResult.getOutputLines());
+                        index, String.join("\n", commandExecutionResult.getOutputLines()));
                 log.error(errMsg);
                 throw new LdplayerFailureException(errMsg);
             }
@@ -143,42 +208,70 @@ class Ldconsole {
     }
 
     /**
+     * Because ldconsole erases the exit value of adb command, it's unsafe to detect failure based on exit value.
+     *
      * @param index
      * @param localPath  file path in PC
      * @param remotePath file path in ldplayer, either file path or directory path
+     *
+     * @throws InterruptedException  command execution process is interrupted
+     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
+     *                                   output.
      */
-    void push(int index, String localPath, String remotePath) {
+    void push(int index, String localPath, String remotePath)
+            throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
         String cmd = LDCONSOLE + " push --index " + index +
                 " --remote " + "\"" + remotePath + "\"" +
                 " --local " + "\"" + localPath + "\"";
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
-        if (commandExecutionResult.getExitValue() != 0) {
-            String errMsg = String.format("Fail to push index %d from local %s to remote %s",
-                    index, localPath, remotePath);
+        if (commandExecutionResult.getExitValue() != 0 || !commandExecutionResult.getOutputLines().isEmpty()) {
+            String errMsg = String.format("Fail to push index %d from local %s to remote %s. %s",
+                    index, localPath, remotePath, String.join("\n", commandExecutionResult.getOutputLines()));
             log.error(errMsg);
             throw new LdplayerFailureException(errMsg);
         }
     }
 
-    void putSetting(int index, String namespace, String key, String value) {
+    /**
+     * Because ldconsole erases the exit value of adb command, it's unsafe to detect failure based on exit value.
+     *
+     * @param index
+     * @param namespace  global, secure, system
+     * @param key
+     * @param value
+     *
+     * @throws InterruptedException  command execution process is interrupted
+     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
+     *                                   output.
+     */
+    void putSetting(int index, String namespace, String key, String value)
+            throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
         String cmd = String.format("%s adb --index %d --command \"shell settings put %s %s %s\"",
                 LDCONSOLE, index, namespace, key, value);
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
-        if (commandExecutionResult.getExitValue() != 0) {
-            String errMsg = String.format("Fail to push setting for index=%d, namespace=%s, key=%s, value=%s",
-                    index, namespace, key, value);
+        if (commandExecutionResult.getExitValue() != 0 || !commandExecutionResult.getOutputLines().isEmpty()) {
+            String errMsg = String.format("Fail to push setting for index=%d, namespace=%s, key=%s, value=%s. %s",
+                    index, namespace, key, value, String.join("\n", commandExecutionResult.getOutputLines()));
             log.error(errMsg);
             throw new LdplayerFailureException(errMsg);
         }
     }
 
-    void reboot(int index) {
+    /**
+     * @throws InterruptedException  command execution process is interrupted
+     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
+     *                                   output.
+     */
+    void reboot(int index) throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
         String cmd = LDCONSOLE + " reboot --index " + index;
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
-        if (commandExecutionResult.getExitValue() != 0) {
+        if (commandExecutionResult.getExitValue() != 0 || !commandExecutionResult.getOutputLines().isEmpty()) {
             String errMsg = String.format("Fail to reboot index %d. %s",
                     index, String.join("\n", commandExecutionResult.getOutputLines()));
             log.error(errMsg);
@@ -186,11 +279,17 @@ class Ldconsole {
         }
     }
 
-    void quit(int index) {
+    /**
+     * @throws InterruptedException  command execution process is interrupted
+     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
+     *                                   output.
+     */
+    void quit(int index) throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
         String cmd = LDCONSOLE + " quit --index " + index;
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
-        if (commandExecutionResult.getExitValue() != 0) {
+        if (commandExecutionResult.getExitValue() != 0 || !commandExecutionResult.getOutputLines().isEmpty()) {
             String errMsg = String.format("Fail to quit index %d. %s",
                     index, String.join("\n", commandExecutionResult.getOutputLines()));
             throw new LdplayerFailureException(String.format("Fail to execute command '%s'", cmd));

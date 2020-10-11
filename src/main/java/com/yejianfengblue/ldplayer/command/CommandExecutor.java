@@ -49,9 +49,7 @@ public class CommandExecutor {
 
         } catch (IOException ioException) {
 
-            if (null != process) {
-                process.destroy();
-            }
+            process.destroy();
             log.error("Fail to read output of command '{}'", cmd, ioException);
             throw new CommandExecutionFailureException(
                     String.format("Fail to read output of command '%s'. %s", cmd, ioException.getMessage()));

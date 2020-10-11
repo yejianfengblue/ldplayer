@@ -23,10 +23,14 @@ class Ldconsole {
      * Because ldconsole erases the exit value of adb command, it's unsafe to detect failure based on exit value.
      *
      * @return output lines
-     *
-     * @throws InterruptedException  command execution process is interrupted
-     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
+     * @throws InterruptedException             command execution process is interrupted
+     * @throws CommandExecutionFailureException command execution failed due to interruption or output reading failure
+     * @deprecated Because one adbd in one emulator can accept one connection at most, and emulator startup
+     * automatically starts adb server and emulator is auto connected, which prevent remote PC from connecting to the
+     * emulator. Currently at a workaround, the adb.exe is deleted from emulator installation directory, which also
+     * make it impossible to run adb command.
      */
+    @Deprecated
     List<String> adb(int index, String command) throws InterruptedException, CommandExecutionFailureException {
 
         String cmd = LDCONSOLE + " adb" +
@@ -38,11 +42,10 @@ class Ldconsole {
 
     /**
      * @return newly created index
-     *
-     * @throws InterruptedException  command execution process is interrupted
-     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
-     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
-     *                                   output.
+     * @throws InterruptedException             command execution process is interrupted
+     * @throws CommandExecutionFailureException command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException         command is executed but considered as failure according to exit value or
+     *                                          output.
      */
     int copy(String name, int fromIndex)
             throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
@@ -66,10 +69,10 @@ class Ldconsole {
     }
 
     /**
-     * @throws InterruptedException  command execution process is interrupted
-     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
-     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
-     *                                   output.
+     * @throws InterruptedException             command execution process is interrupted
+     * @throws CommandExecutionFailureException command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException         command is executed but considered as failure according to exit value or
+     *                                          output.
      */
     void installApp(int index, String apkPath)
             throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
@@ -87,10 +90,10 @@ class Ldconsole {
     }
 
     /**
-     * @throws InterruptedException  command execution process is interrupted
-     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
-     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
-     *                                   output.
+     * @throws InterruptedException             command execution process is interrupted
+     * @throws CommandExecutionFailureException command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException         command is executed but considered as failure according to exit value or
+     *                                          output.
      */
     boolean isRunning(int index)
             throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
@@ -117,10 +120,10 @@ class Ldconsole {
     }
 
     /**
-     * @throws InterruptedException  command execution process is interrupted
-     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
-     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
-     *                                   output.
+     * @throws InterruptedException             command execution process is interrupted
+     * @throws CommandExecutionFailureException command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException         command is executed but considered as failure according to exit value or
+     *                                          output.
      */
     void launch(int index)
             throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
@@ -138,10 +141,10 @@ class Ldconsole {
     }
 
     /**
-     * @throws InterruptedException  command execution process is interrupted
-     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
-     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
-     *                                   output.
+     * @throws InterruptedException             command execution process is interrupted
+     * @throws CommandExecutionFailureException command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException         command is executed but considered as failure according to exit value or
+     *                                          output.
      */
     List<LdplayerState> list()
             throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
@@ -159,7 +162,7 @@ class Ldconsole {
                             "1".equals(columns[4])))
                     .collect(Collectors.toList());
         } else {
-            String errMsg = String.format("Fail to list");
+            String errMsg = "Fail to list";
             log.error(errMsg);
             throw new LdplayerFailureException(errMsg);
         }
@@ -174,27 +177,31 @@ class Ldconsole {
 
         private final int index;
 
-        private String manufacturer;
+        private final String manufacturer;
 
-        private String model;
+        private final String model;
 
         static ModifyBuilder builder(int index) {
             return internalBuilder().index(index);
         }
 
         /**
-         * @throws InterruptedException  command execution process is interrupted
-         * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
-         * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
-         *                                   output.
+         * @throws InterruptedException             command execution process is interrupted
+         * @throws CommandExecutionFailureException command execution failed due to interruption or output reading failure
+         * @throws LdplayerFailureException         command is executed but considered as failure according to exit value or
+         *                                          output.
          */
         void run() throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
             StringBuilder cmdBuilder = new StringBuilder(LDCONSOLE + " modify --index " + index);
-            if (StringUtils.isNotBlank(manufacturer))
-                cmdBuilder.append(" --manufacturer " + manufacturer);
-            if (StringUtils.isNotBlank(model))
-                cmdBuilder.append(" --model " + model);
+            if (StringUtils.isNotBlank(manufacturer)) {
+                cmdBuilder.append(" --manufacturer ");
+                cmdBuilder.append(manufacturer);
+            }
+            if (StringUtils.isNotBlank(model)) {
+                cmdBuilder.append(" --model ");
+                cmdBuilder.append(model);
+            }
 
             String cmd = cmdBuilder.toString();
             CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
@@ -210,14 +217,12 @@ class Ldconsole {
     /**
      * Because ldconsole erases the exit value of adb command, it's unsafe to detect failure based on exit value.
      *
-     * @param index
      * @param localPath  file path in PC
      * @param remotePath file path in ldplayer, either file path or directory path
-     *
-     * @throws InterruptedException  command execution process is interrupted
-     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
-     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
-     *                                   output.
+     * @throws InterruptedException             command execution process is interrupted
+     * @throws CommandExecutionFailureException command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException         command is executed but considered as failure according to exit value or
+     *                                          output.
      */
     void push(int index, String localPath, String remotePath)
             throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
@@ -237,16 +242,17 @@ class Ldconsole {
     /**
      * Because ldconsole erases the exit value of adb command, it's unsafe to detect failure based on exit value.
      *
-     * @param index
-     * @param namespace  global, secure, system
-     * @param key
-     * @param value
-     *
-     * @throws InterruptedException  command execution process is interrupted
-     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
-     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
-     *                                   output.
+     * @param namespace global, secure, system
+     * @throws InterruptedException             command execution process is interrupted
+     * @throws CommandExecutionFailureException command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException         command is executed but considered as failure according to exit value or
+     *                                          output.
+     * @deprecated Because one adbd in one emulator can accept one connection at most, and emulator startup
+     * automatically starts adb server and emulator is auto connected, which prevent remote PC from connecting to the
+     * emulator. Currently at a workaround, the adb.exe is deleted from emulator installation directory, which also
+     * make it impossible to run adb command.
      */
+    @Deprecated
     void putSetting(int index, String namespace, String key, String value)
             throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
@@ -262,10 +268,10 @@ class Ldconsole {
     }
 
     /**
-     * @throws InterruptedException  command execution process is interrupted
-     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
-     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
-     *                                   output.
+     * @throws InterruptedException             command execution process is interrupted
+     * @throws CommandExecutionFailureException command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException         command is executed but considered as failure according to exit value or
+     *                                          output.
      */
     void reboot(int index) throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
@@ -280,10 +286,10 @@ class Ldconsole {
     }
 
     /**
-     * @throws InterruptedException  command execution process is interrupted
-     * @throws CommandExecutionFailureException  command execution failed due to interruption or output reading failure
-     * @throws LdplayerFailureException  command is executed but considered as failure according to exit value or
-     *                                   output.
+     * @throws InterruptedException             command execution process is interrupted
+     * @throws CommandExecutionFailureException command execution failed due to interruption or output reading failure
+     * @throws LdplayerFailureException         command is executed but considered as failure according to exit value or
+     *                                          output.
      */
     void quit(int index) throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 

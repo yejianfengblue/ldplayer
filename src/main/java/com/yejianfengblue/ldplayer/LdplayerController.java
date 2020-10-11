@@ -44,11 +44,8 @@ public class LdplayerController {
             throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
         Optional<Ldplayer> ldplayer = ldplayerService.get(index);
-        if (ldplayer.isPresent()) {
-            return ResponseEntity.ok(ldplayerModelAssembler.toModel(ldplayer.get()));
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        return ldplayer.map(value -> ResponseEntity.ok(ldplayerModelAssembler.toModel(value)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PutMapping(path = "/{index}/" + LdplayerLinks.LAUNCH, produces = MediaTypes.HAL_JSON_VALUE)

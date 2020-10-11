@@ -55,36 +55,8 @@ public class LdplayerService {
             }
         }
 
-        // certificate
-        if (ldplayerCreation.getInstallCertPaths() != null) {
-            for (String cert : ldplayerCreation.getInstallCertPaths()) {
-                installCert(newLdplayerIndex, cert);
-            }
-        }
-
-        boolean rebootRequired = false;
-        // http proxy, need restart, so put last
-        if (StringUtils.isNotBlank(ldplayerCreation.getHttpProxyHost())
-                && null != ldplayerCreation.getHttpProxyPort()) {
-            setHttpProxy(newLdplayerIndex,
-                    ldplayerCreation.getHttpProxyHost(), ldplayerCreation.getHttpProxyPort(),
-                    ldplayerCreation.getHttpProxyExclusionList());
-            rebootRequired = true;
-        }
-
-        // reboot or quit
-        if (ldplayerCreation.isRunAfterCreate()) {
-
-            if (rebootRequired) {
-                ldconsole.reboot(newLdplayerIndex);
-                while (!isAndroidReady(newLdplayerIndex)) {
-                    TimeUnit.SECONDS.sleep(10);
-                }
-            }
-            newLdplayer.setRunning(true);
-            newLdplayer.setAndroidReady(true);
-
-        } else {
+        // run or quit ?
+        if (!ldplayerCreation.isRunAfterCreate()) {
             ldconsole.quit(newLdplayerIndex);
         }
 
@@ -178,6 +150,11 @@ public class LdplayerService {
     }
 
     /**
+     * @deprecated  Because one adbd in one emulator can accept one connection at most, and emulator startup
+     * automatically starts adb server and emulator is auto connected, which prevent remote PC from connecting to the
+     * emulator. Currently at a workaround, the adb.exe is deleted from emulator installation directory, which also
+     * make it impossible to run adb command.
+     *
      * Install certificate to Android by pushing to {@code /system/etc/security/cacerts/} and chmod all read permission.
      * If the ldplayer is not running, launch it first.
      *
@@ -187,6 +164,7 @@ public class LdplayerService {
      * @throws LdplayerFailureException  underlying command is executed but considered as failure
      *                                   according to exit value or output
      */
+    @Deprecated
     public void installCert(int index, String certPathStr)
             throws InterruptedException, LdplayerFailureException, CommandExecutionFailureException {
 
@@ -250,6 +228,7 @@ public class LdplayerService {
      * @throws LdplayerFailureException  underlying command is executed but considered as failure
      *                                   according to exit value or output
      */
+    @Deprecated
     public void setHttpProxy(int index, String host, int port, String exclusion)
             throws InterruptedException, LdplayerFailureException, CommandExecutionFailureException {
 

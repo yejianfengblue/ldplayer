@@ -198,6 +198,8 @@ public class LdplayerService {
         do {
             TimeUnit.SECONDS.sleep(10);
         } while (!isAndroidReady(index));
+
+        TimeUnit.SECONDS.sleep(10);
     }
 
     /**

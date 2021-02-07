@@ -146,11 +146,15 @@ class Ldconsole {
      * @throws LdplayerFailureException         command is executed but considered as failure according to exit value or
      *                                          output.
      */
-    List<LdplayerState> list()
-            throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
+    List<LdplayerState> list() throws InterruptedException, CommandExecutionFailureException, LdplayerFailureException {
 
         String cmd = LDCONSOLE + " list2";
         CommandExecutionResult commandExecutionResult = CommandExecutor.execute(cmd);
+
+        // It's a bug that "ldconsole list2" doesn't output anything even though emulator does exist
+        while (commandExecutionResult.getExitValue() == 0 && commandExecutionResult.getOutputLines().isEmpty()) {
+            commandExecutionResult = CommandExecutor.execute(cmd);
+        }
         if (commandExecutionResult.getExitValue() == 0) {
             List<String> list2Output = commandExecutionResult.getOutputLines();
             return list2Output.stream()
